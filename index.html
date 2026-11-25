@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>青チャート 数学II 理解度トラッカー (1〜262)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans JP', 'sans-serif'],
+          },
+          colors: {
+            chartblue: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* カスタムスクロールバーとタップハイライト抑制 */
+    body {
+      -webkit-tap-highlight-color: transparent;
+      background-color: #f8fafc;
+    }
+    .attempt-btn {
+      transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease, border-color 0.15s ease;
+      user-select: none;
+    }
+    .attempt-btn:active {
+      transform: scale(0.92);
+    }
+    /* 横スクロールバー非表示（フィルタータブ用） */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased pb-20">
+
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-chartblue-900 via-chartblue-800 to-chartblue-700 text-white shadow-md">
+    <div class="max-w-5xl mx-auto px-4 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <!-- 青チャート風ブックアイコン -->
+        <div class="w-10 h-12 bg-white/10 border border-white/30 rounded-md flex flex-col items-center justify-center shrink-0 shadow-inner">
+          <span class="text-[9px] font-bold tracking-wider text-blue-200 leading-none">CHART</span>
+          <span class="text-base font-extrabold text-white leading-tight">II</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-bold tracking-tight">青チャート 数学II 理解度トラッカー</h1>
+          </div>
+          <p class="text-xs text-blue-100 mt-0.5">基本・重要・演習 例題 1〜262 周回＆定着度管理</p>
+        </div>
+      </div>
+
+      <!-- アクションボタン群 -->
+      <div class="flex items-center gap-2 self-end sm:self-auto">
+        <button id="btn-export-csv" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium bg-white text-chartblue-900 hover:bg-blue-50 active:bg-blue-100 rounded-lg shadow-sm transition cursor-pointer">
+          <svg class="w-4 h-4 text-chartblue-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          CSV出力
+        </button>
+        <button id="btn-open-reset" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium bg-chartblue-900/60 hover:bg-rose-600 text-blue-100 hover:text-white border border-white/20 rounded-lg transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          リセット
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 space-y-5">
+
+    <!-- ダッシュボード（集計・可視化） -->
+    <section aria-label="学習進捗サマリー" class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-5">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+          <span class="w-2 h-4 bg-chartblue-600 rounded-full inline-block"></span>
+          現在の到達度サマリー（最新評価ベース）
+        </h2>
+        <span class="text-xs font-medium text-slate-500">全 262 問</span>
+      </div>
+
+      <!-- セグメントプログレスバー -->
+      <div class="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden flex mb-4 shadow-inner" title="緑: ◯ / 黄: ▲ / 赤: ✕ / 灰: 未着手">
+        <div id="bar-O" class="bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
+        <div id="bar-T" class="bg-amber-400 transition-all duration-300" style="width: 0%"></div>
+        <div id="bar-X" class="bg-rose-500 transition-all duration-300" style="width: 0%"></div>
+        <div id="bar-none" class="bg-slate-200 transition-all duration-300" style="width: 100%"></div>
+      </div>
+
+      <!-- 4つの集計カード（クリックでフィルター適用可能） -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+        <!-- ◯ クリア -->
+        <button type="button" data-quick-filter="O" class="text-left p-3 rounded-xl bg-emerald-50/70 hover:bg-emerald-50 border border-emerald-200/80 transition group cursor-pointer">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-emerald-700 flex items-center gap-1">
+              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white text-xs font-bold">◯</span>
+              クリア
+            </span>
+            <span id="stat-rate-O" class="text-xs font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">0.0%</span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span id="stat-count-O" class="text-2xl font-extrabold text-emerald-900">0</span>
+            <span class="text-xs text-emerald-700">/ 262問</span>
+          </div>
+        </button>
+
+        <!-- ▲ あと一歩 -->
+        <button type="button" data-quick-filter="T" class="text-left p-3 rounded-xl bg-amber-50/70 hover:bg-amber-50 border border-amber-200/80 transition group cursor-pointer">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-amber-700 flex items-center gap-1">
+              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-xs font-bold">▲</span>
+              あと一歩
+            </span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span id="stat-count-T" class="text-2xl font-extrabold text-amber-900">0</span>
+            <span class="text-xs text-amber-700">問</span>
+          </div>
+        </button>
+
+        <!-- ✕ 要復習 -->
+        <button type="button" data-quick-filter="X" class="text-left p-3 rounded-xl bg-rose-50/70 hover:bg-rose-50 border border-rose-200/80 transition group cursor-pointer">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-rose-700 flex items-center gap-1">
+              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-rose-500 text-white text-xs font-bold">✕</span>
+              要復習
+            </span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span id="stat-count-X" class="text-2xl font-extrabold text-rose-900">0</span>
+            <span class="text-xs text-rose-700">問</span>
+          </div>
+        </button>
+
+        <!-- 未着手 -->
+        <button type="button" data-quick-filter="NONE" class="text-left p-3 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200 transition group cursor-pointer">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600 flex items-center gap-1">
+              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-300 text-white text-xs font-bold">ー</span>
+              未着手
+            </span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-1">
+            <span id="stat-count-NONE" class="text-2xl font-extrabold text-slate-800">262</span>
+            <span class="text-xs text-slate-500">問</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- 回数別サマリー（コンパクト表示） -->
+      <div class="mt-4 pt-3 border-t border-slate-100">
+        <div class="text-[11px] font-semibold text-slate-500 mb-2">周回別レコード（◯の数 / 実施済数）</div>
+        <div id="round-summary-grid" class="grid grid-cols-5 gap-1.5 sm:gap-2.5 text-center">
+          <!-- JSで1〜5回目を描画 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 絞り込み・検索・範囲指定コントロール -->
+    <section aria-label="検索と絞り込み" class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3.5 sm:p-4 space-y-3">
+      
+      <!-- 1段目：ステータス絞り込みボタン群 -->
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1" id="status-filter-tabs">
+        <button type="button" data-status="ALL" class="filter-tab active shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
+          すべて <span class="tab-count ml-0.5 opacity-80">(262)</span>
+        </button>
+        <button type="button" data-status="REVIEW" class="filter-tab shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
+          要復習 (✕・▲) <span class="tab-count ml-0.5 opacity-80">(0)</span>
+        </button>
+        <button type="button" data-status="X" class="filter-tab shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
+          ✕ のみ <span class="tab-count ml-0.5 opacity-80">(0)</span>
+        </button>
+        <button type="button" data-status="T" class="filter-tab shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
+          ▲ のみ <span class="tab-count ml-0.5 opacity-80">(0)</span>
+        </button>
+        <button type="button" data-status="O" class="filter-tab shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
+          ◯ のみ <span class="tab-count ml-0.5 opacity-80">(0)</span>
+        </button>
+        <button type="button" data-status="NONE" class="filter-tab shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer">
+          未着手 <span class="tab-count ml-0.5 opacity-80">(262)</span>
+        </button>
+      </div>
+
+      <!-- 2段目：回数指定フィルター・問題番号検索・範囲指定 -->
+      <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 pt-2 border-t border-slate-100">
+        
+        <!-- 回数指定フィルター -->
+        <div class="sm:col-span-4">
+          <label for="round-filter" class="block text-[11px] font-semibold text-slate-500 mb-1">周回ピンポイント抽出</label>
+          <select id="round-filter" class="w-full text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-chartblue-600 focus:bg-white">
+            <option value="ALL">指定なし（すべての周回）</option>
+            <option value="R1_FAIL">1回目で ✕ または ▲</option>
+            <option value="R2_FAIL">2回目で ✕ または ▲</option>
+            <option value="R3_FAIL">3回目で ✕ または ▲</option>
+            <option value="R4_FAIL">4回目で ✕ または ▲</option>
+            <option value="R5_FAIL">5回目で ✕ または ▲</option>
+            <option value="R1_X">1回目で ✕ のみ</option>
+            <option value="R2_X">2回目で ✕ のみ</option>
+            <option value="R3_X">3回目で ✕ のみ</option>
+          </select>
+        </div>
+
+        <!-- 番号・メモ検索 -->
+        <div class="sm:col-span-4">
+          <label for="search-input" class="block text-[11px] font-semibold text-slate-500 mb-1">問題番号 / メモ検索</label>
+          <div class="relative">
+            <input id="search-input" type="text" placeholder="例: 187 や 対数" class="w-full text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-7 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-chartblue-600 focus:bg-white">
+            <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <button id="btn-clear-search" type="button" class="hidden absolute right-2 top-2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer" title="検索をクリア">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 範囲指定 -->
+        <div class="sm:col-span-4">
+          <label class="block text-[11px] font-semibold text-slate-500 mb-1">問題番号の範囲指定 (1〜262)</label>
+          <div class="flex items-center gap-1.5">
+            <input id="range-start" type="number" min="1" max="262" placeholder="1" class="w-full text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-center text-slate-700 focus:outline-none focus:ring-2 focus:ring-chartblue-600 focus:bg-white">
+            <span class="text-slate-400 font-bold">〜</span>
+            <input id="range-end" type="number" min="1" max="262" placeholder="262" class="w-full text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-center text-slate-700 focus:outline-none focus:ring-2 focus:ring-chartblue-600 focus:bg-white">
+            <button id="btn-reset-filters" type="button" class="shrink-0 px-2.5 py-2 text-xs font-medium text-slate-600 hover:text-chartblue-700 bg-slate-100 hover:bg-blue-50 rounded-lg transition cursor-pointer" title="絞り込み条件をすべて解除">
+              解除
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3段目：クイック範囲ジャンプチップ＆表示件数 -->
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+        <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+          <span class="text-[11px] text-slate-400 shrink-0 mr-1">範囲ショートカット:</span>
+          <button type="button" data-range="1-50" class="range-chip px-2 py-1 rounded bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-chartblue-800 font-medium transition cursor-pointer shrink-0">1〜50</button>
+          <button type="button" data-range="51-100" class="range-chip px-2 py-1 rounded bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-chartblue-800 font-medium transition cursor-pointer shrink-0">51〜100</button>
+          <button type="button" data-range="101-150" class="range-chip px-2 py-1 rounded bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-chartblue-800 font-medium transition cursor-pointer shrink-0">101〜150</button>
+          <button type="button" data-range="151-200" class="range-chip px-2 py-1 rounded bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-chartblue-800 font-medium transition cursor-pointer shrink-0">151〜200</button>
+          <button type="button" data-range="201-262" class="range-chip px-2 py-1 rounded bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-chartblue-800 font-medium transition cursor-pointer shrink-0">201〜262</button>
+        </div>
+        <div class="text-slate-500 font-medium ml-auto">
+          表示中: <span id="visible-count" class="font-bold text-chartblue-700">262</span> / 262 問
+        </div>
+      </div>
+    </section>
+
+    <!-- 操作ヒントバー -->
+    <div class="flex items-center justify-between px-1 text-[11px] text-slate-500">
+      <span>※ 各回のボタンをタップすると <strong class="text-slate-700">ー → ◯ → ▲ → ✕ → ー</strong> の順で切り替わります（自動保存）</span>
+    </div>
+
+    <!-- 問題リストコンテナ -->
+    <section aria-label="問題一覧" id="problem-list" class="space-y-2">
+      <!-- JSで1〜262のカードを描画 -->
+    </section>
+
+    <!-- 検索結果0件時のエンプティステート -->
+    <div id="empty-state" class="hidden bg-white rounded-2xl border border-slate-200 p-10 text-center">
+      <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <p class="text-sm font-bold text-slate-700">条件に一致する問題が見つかりませんでした</p>
+      <p class="text-xs text-slate-500 mt-1">フィルター条件や番号の範囲を変更してみてください。</p>
+      <button id="btn-empty-reset" type="button" class="mt-4 px-4 py-2 bg-chartblue-600 hover:bg-chartblue-700 text-white text-xs font-bold rounded-lg transition cursor-pointer">
+        すべての問題を表示する
+      </button>
+    </div>
+
+  </main>
+
+  <!-- トップへ戻るフローティングボタン -->
+  <button id="btn-scroll-top" type="button" aria-label="一番上へ戻る" class="hidden fixed bottom-5 right-5 z-30 w-11 h-11 rounded-full bg-chartblue-800 hover:bg-chartblue-700 text-white shadow-lg flex items-center justify-center transition cursor-pointer">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+    </svg>
+  </button>
+
+  <!-- 二重確認付きデータリセット用カスタムモーダル -->
+  <div id="reset-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center gap-3 text-rose-600 mb-3">
+        <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div>
+          <h3 id="modal-title" class="text-base font-bold text-slate-900">学習データをリセットしますか？</h3>
+          <p class="text-xs text-slate-500">問題 1〜262 のすべての記録とメモが対象です</p>
+        </div>
+      </div>
+
+      <!-- ステップ1のメッセージ -->
+      <div id="reset-step-1">
+        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+          これまでに記録した1〜5回目の評価（◯・▲・✕）および入力したメモがすべて消去されます。必要に応じて先に「CSV出力」でバックアップを保存してください。
+        </p>
+        <div class="mt-5 flex items-center justify-end gap-2">
+          <button type="button" class="btn-close-modal px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer">
+            キャンセル
+          </button>
+          <button id="btn-reset-next" type="button" class="px-4 py-2 text-xs sm:text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition cursor-pointer">
+            次へ進む（最終確認）
+          </button>
+        </div>
+      </div>
+
+      <!-- ステップ2の最終確認 -->
+      <div id="reset-step-2" class="hidden">
+        <div class="bg-rose-50 border border-rose-200 rounded-xl p-3.5 text-rose-900">
+          <p class="text-xs sm:text-sm font-bold">【最終確認】本当にすべてのデータを削除しますか？</p>
+          <p class="text-xs mt-1 text-rose-700">この操作は取り消すことができません。ブラウザに保存されたデータが完全に初期化されます。</p>
+        </div>
+        <div class="mt-5 flex items-center justify-end gap-2">
+          <button type="button" class="btn-close-modal px-4 py-2 text-xs sm:text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer">
+            やめる
+          </button>
+          <button id="btn-reset-confirm" type="button" class="px-4 py-2 text-xs sm:text-sm font-bold text-white bg-rose-700 hover:bg-rose-800 rounded-lg shadow-sm transition cursor-pointer">
+            完全にリセットする
+          </button>
+        </div>
+      </d
