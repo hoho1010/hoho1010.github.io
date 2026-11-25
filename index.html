@@ -347,4 +347,660 @@
             完全にリセットする
           </button>
         </div>
-      </d
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-opacity duration-200">
+    <div id="toast-message" class="bg-slate-900/95 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2">
+      <span>保存しました</span>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * 青チャート 数学II 理解度トラッカー メインスクリプト
+     * 全262問の1〜5回目評価およびメモを localStorage で管理します。
+     */
+    (function () {
+      const TOTAL_PROBLEMS = 262;
+      const STORAGE_KEY = 'aochart_math2_tracker_v1';
+
+      // 評価状態のサイクル定義: ''(未記録) -> 'O'(◯) -> 'T'(▲) -> 'X'(✕) -> ''
+      const STATUS_CYCLE = ['', 'O', 'T', 'X'];
+
+      // 状態ごとの表示ラベルとスタイル定義
+      const STATUS_CONFIG = {
+        '': {
+          symbol: 'ー',
+          label: '未記録',
+          btnClass: 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200/70',
+          badgeClass: 'bg-slate-100 text-slate-400 border-slate-200',
+          rowAccent: 'border-l-slate-200'
+        },
+        'O': {
+          symbol: '◯',
+          label: '完璧',
+          btnClass: 'bg-emerald-500 text-white border-emerald-600 shadow-xs hover:bg-emerald-600',
+          badgeClass: 'bg-emerald-500 text-white border-emerald-600',
+          rowAccent: 'border-l-emerald-500'
+        },
+        'T': {
+          symbol: '▲',
+          label: '惜しい',
+          btnClass: 'bg-amber-400 text-amber-950 border-amber-500 shadow-xs hover:bg-amber-500',
+          badgeClass: 'bg-amber-400 text-amber-950 border-amber-500',
+          rowAccent: 'border-l-amber-400'
+        },
+        'X': {
+          symbol: '✕',
+          label: '解けない',
+          btnClass: 'bg-rose-500 text-white border-rose-600 shadow-xs hover:bg-rose-600',
+          badgeClass: 'bg-rose-500 text-white border-rose-600',
+          rowAccent: 'border-l-rose-500'
+        }
+      };
+
+      // アプリケーション状態
+      let records = {};
+      let filterState = {
+        status: 'ALL',     // ALL, REVIEW, X, T, O, NONE
+        roundFilter: 'ALL', // ALL, R1_FAIL, R2_FAIL, R3_FAIL, R4_FAIL, R5_FAIL, R1_X, R2_X, R3_X
+        search: '',
+        rangeStart: null,
+        rangeEnd: null
+      };
+
+      // DOM要素キャッシュ
+      const problemListEl = document.getElementById('problem-list');
+      const emptyStateEl = document.getElementById('empty-state');
+      const visibleCountEl = document.getElementById('visible-count');
+      const searchInputEl = document.getElementById('search-input');
+      const btnClearSearchEl = document.getElementById('btn-clear-search');
+      const roundFilterEl = document.getElementById('round-filter');
+      const rangeStartEl = document.getElementById('range-start');
+      const rangeEndEl = document.getElementById('range-end');
+
+      /**
+       * 初期データの構築またはlocalStorageからの読み込み
+       */
+      function loadRecords() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          const parsed = saved ? JSON.parse(saved) : {};
+          const initialized = {};
+          for (let i = 1; i <= TOTAL_PROBLEMS; i++) {
+            if (parsed[i] && Array.isArray(parsed[i].attempts)) {
+              initialized[i] = {
+                attempts: [
+                  parsed[i].attempts[0] || '',
+                  parsed[i].attempts[1] || '',
+                  parsed[i].attempts[2] || '',
+                  parsed[i].attempts[3] || '',
+                  parsed[i].attempts[4] || ''
+                ],
+                memo: typeof parsed[i].memo === 'string' ? parsed[i].memo : ''
+              };
+            } else {
+              initialized[i] = {
+                attempts: ['', '', '', '', ''],
+                memo: ''
+              };
+            }
+          }
+          records = initialized;
+        } catch (err) {
+          console.error('データの読み込みに失敗しました:', err);
+          records = {};
+          for (let i = 1; i <= TOTAL_PROBLEMS; i++) {
+            records[i] = { attempts: ['', '', '', '', ''], memo: '' };
+          }
+        }
+      }
+
+      /**
+       * localStorageへ保存
+       */
+      function saveRecords() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        } catch (err) {
+          console.error('データの保存に失敗しました:', err);
+          showToast('保存容量の上限に達した可能性があります');
+        }
+      }
+
+      /**
+       * ある問題の最新評価（1〜5回目のうち最も後ろにある記録）を取得
+       * 記録が1つもなければ '' を返す
+       */
+      function getLatestStatus(problemId) {
+        const attempts = records[problemId].attempts;
+        for (let i = 4; i >= 0; i--) {
+          if (attempts[i] !== '') {
+            return attempts[i];
+          }
+        }
+        return '';
+      }
+
+      /**
+       * ダッシュボードとフィルタータブのカウントを更新
+       */
+      function updateDashboard() {
+        let countO = 0;
+        let countT = 0;
+        let countX = 0;
+        let countNone = 0;
+
+        // 周回別カウント
+        const roundStats = [
+          { done: 0, ok: 0 },
+          { done: 0, ok: 0 },
+          { done: 0, ok: 0 },
+          { done: 0, ok: 0 },
+          { done: 0, ok: 0 }
+        ];
+
+        for (let i = 1; i <= TOTAL_PROBLEMS; i++) {
+          const latest = getLatestStatus(i);
+          if (latest === 'O') countO++;
+          else if (latest === 'T') countT++;
+          else if (latest === 'X') countX++;
+          else countNone++;
+
+          const attempts = records[i].attempts;
+          for (let r = 0; r < 5; r++) {
+            if (attempts[r] !== '') {
+              roundStats[r].done++;
+              if (attempts[r] === 'O') roundStats[r].ok++;
+            }
+          }
+        }
+
+        // 達成率
+        const rateO = ((countO / TOTAL_PROBLEMS) * 100).toFixed(1);
+        const pctO = (countO / TOTAL_PROBLEMS) * 100;
+        const pctT = (countT / TOTAL_PROBLEMS) * 100;
+        const pctX = (countX / TOTAL_PROBLEMS) * 100;
+        const pctNone = 100 - (pctO + pctT + pctX);
+
+        // プログレスバー幅更新
+        document.getElementById('bar-O').style.width = `${pctO}%`;
+        document.getElementById('bar-T').style.width = `${pctT}%`;
+        document.getElementById('bar-X').style.width = `${pctX}%`;
+        document.getElementById('bar-none').style.width = `${Math.max(0, pctNone)}%`;
+
+        // KPIカード数値更新
+        document.getElementById('stat-count-O').textContent = countO;
+        document.getElementById('stat-rate-O').textContent = `${rateO}%`;
+        document.getElementById('stat-count-T').textContent = countT;
+        document.getElementById('stat-count-X').textContent = countX;
+        document.getElementById('stat-count-NONE').textContent = countNone;
+
+        // タブ内の件数バッジ更新
+        const tabCounts = {
+          ALL: TOTAL_PROBLEMS,
+          REVIEW: countX + countT,
+          X: countX,
+          T: countT,
+          O: countO,
+          NONE: countNone
+        };
+        document.querySelectorAll('#status-filter-tabs .filter-tab').forEach(btn => {
+          const statusKey = btn.getAttribute('data-status');
+          const span = btn.querySelector('.tab-count');
+          if (span && tabCounts[statusKey] !== undefined) {
+            span.textContent = `(${tabCounts[statusKey]})`;
+          }
+        });
+
+        // 周回別サマリー更新
+        const roundGridEl = document.getElementById('round-summary-grid');
+        roundGridEl.innerHTML = roundStats.map((st, idx) => {
+          const rate = st.done > 0 ? Math.round((st.ok / st.done) * 100) : 0;
+          return `
+            <div class="bg-slate-50 border border-slate-200/70 rounded-lg py-1.5 px-1">
+              <div class="text-[10px] font-bold text-slate-500">${idx + 1}回目</div>
+              <div class="text-xs sm:text-sm font-extrabold text-chartblue-800 mt-0.5">
+                ${st.ok}<span class="text-[10px] font-normal text-slate-400">/${st.done}</span>
+              </div>
+              <div class="text-[10px] text-emerald-600 font-semibold">${st.done > 0 ? rate + '%' : '-'}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      /**
+       * 指定した問題が現在のフィルター条件に一致するかを判定
+       */
+      function matchesFilter(problemId) {
+        const latest = getLatestStatus(problemId);
+        const data = records[problemId];
+
+        // 1. ステータス絞り込み
+        if (filterState.status === 'REVIEW') {
+          if (latest !== 'X' && latest !== 'T') return false;
+        } else if (filterState.status === 'X') {
+          if (latest !== 'X') return false;
+        } else if (filterState.status === 'T') {
+          if (latest !== 'T') return false;
+        } else if (filterState.status === 'O') {
+          if (latest !== 'O') return false;
+        } else if (filterState.status === 'NONE') {
+          if (latest !== '') return false;
+        }
+
+        // 2. 周回ピンポイント抽出
+        if (filterState.roundFilter !== 'ALL') {
+          const rf = filterState.roundFilter;
+          if (rf.startsWith('R') && rf.endsWith('_FAIL')) {
+            const roundIdx = parseInt(rf.charAt(1), 10) - 1;
+            const val = data.attempts[roundIdx];
+            if (val !== 'X' && val !== 'T') return false;
+          } else if (rf.startsWith('R') && rf.endsWith('_X')) {
+            const roundIdx = parseInt(rf.charAt(1), 10) - 1;
+            const val = data.attempts[roundIdx];
+            if (val !== 'X') return false;
+          }
+        }
+
+        // 3. 範囲指定
+        if (filterState.rangeStart !== null && problemId < filterState.rangeStart) {
+          return false;
+        }
+        if (filterState.rangeEnd !== null && problemId > filterState.rangeEnd) {
+          return false;
+        }
+
+        // 4. 検索キーワード（問題番号 または メモ内容）
+        if (filterState.search !== '') {
+          const q = filterState.search.trim().toLowerCase();
+          const idStr = String(problemId);
+          const memoStr = data.memo.toLowerCase();
+          // 数字だけ入力された場合は番号一致（部分一致または完全一致）とメモ一致を許容
+          if (!idStr.includes(q) && !memoStr.includes(q)) {
+            return false;
+          }
+        }
+
+        return true;
+      }
+
+      /**
+       * 1行分のHTML文字列を生成
+       */
+      function createRowHTML(problemId) {
+        const data = records[problemId];
+        const latest = getLatestStatus(problemId);
+        const latestCfg = STATUS_CONFIG[latest];
+
+        // 1〜5回目のボタン群HTML
+        const buttonsHTML = data.attempts.map((val, idx) => {
+          const cfg = STATUS_CONFIG[val];
+          return `
+            <button
+              type="button"
+              data-action="toggle-attempt"
+              data-id="${problemId}"
+              data-round="${idx}"
+              aria-label="問題${problemId}の${idx + 1}回目: ${cfg.label}"
+              class="attempt-btn flex flex-col items-center justify-center w-11 h-11 sm:w-11 sm:h-11 rounded-xl border font-bold cursor-pointer ${cfg.btnClass}"
+            >
+              <span class="text-[9px] leading-none opacity-75 mb-0.5">${idx + 1}回</span>
+              <span class="text-sm sm:text-base leading-none">${cfg.symbol}</span>
+            </button>
+          `;
+        }).join('');
+
+        // HTMLエスケープ処理（メモ用）
+        const escapedMemo = data.memo
+          .replace(/&/g, '&amp;')
+          .replace(/"/g, '&quot;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+
+        return `
+          <div id="row-${problemId}" class="bg-white rounded-xl border border-slate-200/90 border-l-4 ${latestCfg.rowAccent} p-3 sm:px-4 sm:py-2.5 shadow-2xs hover:border-slate-300 transition-colors">
+            <div class="flex flex-col md:flex-row md:items-center gap-2.5 md:gap-4">
+              
+              <!-- 左側：最新到達度バッジ & 問題番号 -->
+              <div class="flex items-center justify-between md:justify-start md:w-36 shrink-0">
+                <div class="flex items-center gap-2.5">
+                  <span id="badge-${problemId}" title="現在の最新到達度: ${latestCfg.label}" class="inline-flex items-center justify-center w-7 h-7 rounded-full border text-xs font-extrabold shrink-0 ${latestCfg.badgeClass}">
+                    ${latestCfg.symbol}
+                  </span>
+                  <div>
+                    <span class="text-[10px] font-semibold text-slate-400 block leading-none">例題</span>
+                    <span class="text-base sm:text-lg font-extrabold text-slate-800 tracking-tight leading-tight">${problemId}</span>
+                  </div>
+                </div>
+                <!-- モバイル用最新ステータスラベル -->
+                <span id="mobile-status-text-${problemId}" class="md:hidden text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                  最新: ${latestCfg.symbol}（${latestCfg.label}）
+                </span>
+              </div>
+
+              <!-- 中央：1回目〜5回目の記録ボタン -->
+              <div class="flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 shrink-0">
+                ${buttonsHTML}
+              </div>
+
+              <!-- 右側：メモ入力フィールド -->
+              <div class="flex-1 min-w-0">
+                <div class="relative flex items-center">
+                  <input
+                    type="text"
+                    data-action="edit-memo"
+                    data-id="${problemId}"
+                    value="${escapedMemo}"
+                    placeholder="メモ（例：計算ミス注意、真数条件忘れずに）"
+                    class="w-full text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200/80 focus:border-chartblue-500 rounded-lg px-3 py-2 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-chartblue-500/20 transition"
+                  >
+                </div>
+              </div>
+
+            </div>
+          </div>
+        `;
+      }
+
+      /**
+       * フィルター結果に基づいて問題一覧全体を再描画
+       */
+      function renderList() {
+        const htmlParts = [];
+        let count = 0;
+
+        for (let i = 1; i <= TOTAL_PROBLEMS; i++) {
+          if (matchesFilter(i)) {
+            htmlParts.push(createRowHTML(i));
+            count++;
+          }
+        }
+
+        problemListEl.innerHTML = htmlParts.join('');
+        visibleCountEl.textContent = count;
+
+        if (count === 0) {
+          emptyStateEl.classList.remove('hidden');
+        } else {
+          emptyStateEl.classList.add('hidden');
+        }
+      }
+
+      /**
+       * 単一の行のみを高速に部分更新（ボタンタップ時の体験向上）
+       */
+      function updateSingleRowDOM(problemId) {
+        const existingRow = document.getElementById(`row-${problemId}`);
+        if (!existingRow) return;
+
+        // もし現在のフィルター条件から外れる場合はそのまま残すか、再描画するか
+        // ユーザーが連続タップしやすいよう、その場では見た目だけ即座に更新し、サマリーだけ最新化する
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = createRowHTML(problemId).trim();
+        const newRow = tempDiv.firstElementChild;
+        existingRow.replaceWith(newRow);
+      }
+
+      /**
+       * タブのアクティブ見た目を同期
+       */
+      function syncTabStyles() {
+        document.querySelectorAll('#status-filter-tabs .filter-tab').forEach(btn => {
+          const isCurrent = btn.getAttribute('data-status') === filterState.status;
+          if (isCurrent) {
+            btn.className = 'filter-tab active shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold bg-chartblue-700 text-white shadow-xs transition cursor-pointer';
+          } else {
+            btn.className = 'filter-tab shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200/80 transition cursor-pointer';
+          }
+        });
+      }
+
+      /**
+       * トースト通知の表示
+       */
+      let toastTimer = null;
+      function showToast(message) {
+        const toastEl = document.getElementById('toast');
+        const msgEl = document.getElementById('toast-message');
+        msgEl.textContent = message;
+        toastEl.classList.remove('opacity-0');
+        toastEl.classList.add('opacity-100');
+
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toastEl.classList.remove('opacity-100');
+          toastEl.classList.add('opacity-0');
+        }, 2400);
+      }
+
+      /**
+       * BOM付きUTF-8 CSVエクスポート処理
+       */
+      function exportToCSV() {
+        const headers = ['問題番号', '最新評価', '1回目', '2回目', '3回目', '4回目', '5回目', 'メモ'];
+        const rows = [headers.join(',')];
+
+        const toSymbol = (code) => {
+          if (code === 'O') return '◯';
+          if (code === 'T') return '▲';
+          if (code === 'X') return '✕';
+          return 'ー';
+        };
+
+        for (let i = 1; i <= TOTAL_PROBLEMS; i++) {
+          const data = records[i];
+          const latest = toSymbol(getLatestStatus(i));
+          const r1 = toSymbol(data.attempts[0]);
+          const r2 = toSymbol(data.attempts[1]);
+          const r3 = toSymbol(data.attempts[2]);
+          const r4 = toSymbol(data.attempts[3]);
+          const r5 = toSymbol(data.attempts[4]);
+          // メモ内のダブルクォーテーションをエスケープ
+          const safeMemo = `"${data.memo.replace(/"/g, '""')}"`;
+
+          rows.push([i, latest, r1, r2, r3, r4, r5, safeMemo].join(','));
+        }
+
+        // Excel文字化け防止用のUTF-8 BOM付与
+        const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+        const csvContent = rows.join('\r\n');
+        const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `aochart_math2_progress_${dateStr}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        showToast('CSVファイルをダウンロードしました');
+      }
+
+      /**
+       * イベントリスナーのセットアップ
+       */
+      function bindEvents() {
+        // 問題リスト内のクリック（イベント委譲：1〜5回目ボタンの切り替え）
+        problemListEl.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-action="toggle-attempt"]');
+          if (!btn) return;
+
+          const id = parseInt(btn.getAttribute('data-id'), 10);
+          const roundIdx = parseInt(btn.getAttribute('data-round'), 10);
+          const currentVal = records[id].attempts[roundIdx];
+          const nextIdx = (STATUS_CYCLE.indexOf(currentVal) + 1) % STATUS_CYCLE.length;
+          const nextVal = STATUS_CYCLE[nextIdx];
+
+          records[id].attempts[roundIdx] = nextVal;
+          saveRecords();
+          updateSingleRowDOM(id);
+          updateDashboard();
+        });
+
+        // メモ入力のリアルタイム保存（イベント委譲）
+        problemListEl.addEventListener('input', (e) => {
+          const input = e.target.closest('input[data-action="edit-memo"]');
+          if (!input) return;
+
+          const id = parseInt(input.getAttribute('data-id'), 10);
+          records[id].memo = input.value;
+          saveRecords();
+        });
+
+        // ステータス絞り込みタブ
+        document.getElementById('status-filter-tabs').addEventListener('click', (e) => {
+          const btn = e.target.closest('.filter-tab');
+          if (!btn) return;
+          filterState.status = btn.getAttribute('data-status');
+          syncTabStyles();
+          renderList();
+        });
+
+        // サマリーカードクリックでも絞り込み連動
+        document.querySelectorAll('[data-quick-filter]').forEach(card => {
+          card.addEventListener('click', () => {
+            const targetStatus = card.getAttribute('data-quick-filter');
+            filterState.status = (filterState.status === targetStatus) ? 'ALL' : targetStatus;
+            syncTabStyles();
+            renderList();
+            showToast(filterState.status === 'ALL' ? 'すべての問題を表示します' : '選択したステータスで絞り込みました');
+          });
+        });
+
+        // 周回ピンポイントフィルター
+        roundFilterEl.addEventListener('change', (e) => {
+          filterState.roundFilter = e.target.value;
+          renderList();
+        });
+
+        // 検索ボックス入力
+        searchInputEl.addEventListener('input', (e) => {
+          filterState.search = e.target.value;
+          btnClearSearchEl.classList.toggle('hidden', filterState.search === '');
+          renderList();
+        });
+
+        // 検索クリアボタン
+        btnClearSearchEl.addEventListener('click', () => {
+          searchInputEl.value = '';
+          filterState.search = '';
+          btnClearSearchEl.classList.add('hidden');
+          renderList();
+        });
+
+        // 範囲指定入力
+        const handleRangeChange = () => {
+          const s = parseInt(rangeStartEl.value, 10);
+          const e = parseInt(rangeEndEl.value, 10);
+          filterState.rangeStart = (!isNaN(s) && s >= 1) ? s : null;
+          filterState.rangeEnd = (!isNaN(e) && e >= 1) ? e : null;
+          renderList();
+        };
+        rangeStartEl.addEventListener('input', handleRangeChange);
+        rangeEndEl.addEventListener('input', handleRangeChange);
+
+        // 範囲ショートカットチップ
+        document.querySelectorAll('.range-chip').forEach(chip => {
+          chip.addEventListener('click', () => {
+            const [s, e] = chip.getAttribute('data-range').split('-').map(Number);
+            rangeStartEl.value = s;
+            rangeEndEl.value = e;
+            filterState.rangeStart = s;
+            filterState.rangeEnd = e;
+            renderList();
+          });
+        });
+
+        // フィルター全解除ボタン
+        const resetAllFilters = () => {
+          filterState = {
+            status: 'ALL',
+            roundFilter: 'ALL',
+            search: '',
+            rangeStart: null,
+            rangeEnd: null
+          };
+          roundFilterEl.value = 'ALL';
+          searchInputEl.value = '';
+          btnClearSearchEl.classList.add('hidden');
+          rangeStartEl.value = '';
+          rangeEndEl.value = '';
+          syncTabStyles();
+          renderList();
+        };
+        document.getElementById('btn-reset-filters').addEventListener('click', resetAllFilters);
+        document.getElementById('btn-empty-reset').addEventListener('click', resetAllFilters);
+
+        // CSVエクスポートボタン
+        document.getElementById('btn-export-csv').addEventListener('click', exportToCSV);
+
+        // 二重確認リセットモーダル制御
+        const resetModal = document.getElementById('reset-modal');
+        const step1 = document.getElementById('reset-step-1');
+        const step2 = document.getElementById('reset-step-2');
+
+        document.getElementById('btn-open-reset').addEventListener('click', () => {
+          step1.classList.remove('hidden');
+          step2.classList.add('hidden');
+          resetModal.classList.remove('hidden');
+        });
+
+        document.getElementById('btn-reset-next').addEventListener('click', () => {
+          step1.classList.add('hidden');
+          step2.classList.remove('hidden');
+        });
+
+        document.querySelectorAll('.btn-close-modal').forEach(btn => {
+          btn.addEventListener('click', () => {
+            resetModal.classList.add('hidden');
+          });
+        });
+
+        resetModal.addEventListener('click', (e) => {
+          if (e.target === resetModal) {
+            resetModal.classList.add('hidden');
+          }
+        });
+
+        document.getElementById('btn-reset-confirm').addEventListener('click', () => {
+          localStorage.removeItem(STORAGE_KEY);
+          loadRecords();
+          resetAllFilters();
+          updateDashboard();
+          resetModal.classList.add('hidden');
+          showToast('すべての学習データをリセットしました');
+        });
+
+        // スクロールトップボタンの表示制御
+        const scrollTopBtn = document.getElementById('btn-scroll-top');
+        window.addEventListener('scroll', () => {
+          if (window.scrollY > 400) {
+            scrollTopBtn.classList.remove('hidden');
+          } else {
+            scrollTopBtn.classList.add('hidden');
+          }
+        }, { passive: true });
+
+        scrollTopBtn.addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+
+      // アプリ初期化実行
+      loadRecords();
+      syncTabStyles();
+      updateDashboard();
+      renderList();
+      bindEvents();
+    })();
+  </script>
+</body>
+</html>
