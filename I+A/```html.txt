@@ -1,0 +1,1287 @@
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>青チャート 数学I+A 理解度トラッカー</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Noto Sans JP', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    /* カスタムスクロールバー非表示（横スクロールタブ用） */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* タップ時のハイライト防止 */
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased pb-24">
+
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-[#1e3a8a] to-[#1d4ed8] text-white shadow-md">
+    <div class="max-w-2xl mx-auto px-4 py-5">
+      <div class="flex items-start gap-3.5">
+        <!-- 左側 CHART I+A バッジアイコン -->
+        <div class="shrink-0 w-14 h-16 rounded-xl bg-white/10 border border-white/25 backdrop-blur-sm flex flex-col items-center justify-center shadow-inner select-none">
+          <span class="text-[9px] font-bold tracking-widest text-blue-100 leading-none mb-1">CHART</span>
+          <span class="text-base font-extrabold tracking-tight text-white leading-none">I+A</span>
+        </div>
+
+        <!-- タイトル＆サブタイトル -->
+        <div class="flex-1 min-w-0">
+          <h1 class="text-lg sm:text-xl font-extrabold tracking-tight leading-snug">
+            青チャート 数学I+A 理解度トラッカー
+          </h1>
+          <p class="text-xs sm:text-sm text-blue-100 mt-1 font-medium">
+            基本・重要・演習 例題 周回＆定着度管理
+          </p>
+        </div>
+      </div>
+
+      <!-- アクションボタン（CSV出力・リセット） -->
+      <div class="flex items-center justify-end gap-2.5 mt-4">
+        <button
+          id="btn-export-csv"
+          type="button"
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-[#1e3a8a] font-bold text-xs sm:text-sm shadow-sm hover:bg-blue-50 active:scale-95 transition"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+          </svg>
+          CSV出力
+        </button>
+
+        <button
+          id="btn-reset-open"
+          type="button"
+          class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/10 border border-white/25 text-white font-bold text-xs sm:text-sm hover:bg-white/20 active:scale-95 transition"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          リセット
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="max-w-2xl mx-auto px-3.5 sm:px-4 pt-4 space-y-4">
+
+    <!-- 科目切り替えタブ（すべて / 数学I / 数学A） -->
+    <section class="bg-white rounded-2xl p-1.5 shadow-sm border border-slate-200/80 grid grid-cols-3 gap-1.5" aria-label="科目切り替え">
+      <button
+        type="button"
+        data-subject="ALL"
+        class="subject-tab py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition text-center bg-[#1d4ed8] text-white shadow-sm"
+      >
+        すべて <span class="opacity-90 font-semibold">(283)</span>
+      </button>
+      <button
+        type="button"
+        data-subject="I"
+        class="subject-tab py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition text-center text-slate-600 hover:bg-slate-100"
+      >
+        数学I <span class="opacity-80 font-semibold">(174)</span>
+      </button>
+      <button
+        type="button"
+        data-subject="A"
+        class="subject-tab py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition text-center text-slate-600 hover:bg-slate-100"
+      >
+        数学A <span class="opacity-80 font-semibold">(109)</span>
+      </button>
+    </section>
+
+    <!-- 現在の到達度サマリー（最新評価ベース） -->
+    <section class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80">
+      <div class="flex items-center justify-between mb-1.5">
+        <div class="flex items-center gap-2">
+          <span class="w-1.5 h-4 rounded-full bg-[#1d4ed8] inline-block"></span>
+          <h2 class="text-sm sm:text-base font-extrabold text-slate-800">
+            現在の到達度サマリー（最新評価ベース）
+          </h2>
+        </div>
+        <span id="summary-scope-badge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+          全体
+        </span>
+      </div>
+
+      <div class="flex items-baseline justify-between text-xs sm:text-sm text-slate-500 font-semibold mb-2">
+        <span>全 <strong id="summary-total" class="text-slate-800 font-extrabold text-base">283</strong> 問</span>
+        <span class="text-emerald-600 font-bold">クリア率 <span id="summary-clear-rate-top">0.0%</span></span>
+      </div>
+
+      <!-- 全体プログレスバー -->
+      <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden mb-4 flex">
+        <div id="bar-clear" class="bg-emerald-500 h-full transition-all duration-300" style="width: 0%"></div>
+        <div id="bar-almost" class="bg-amber-400 h-full transition-all duration-300" style="width: 0%"></div>
+        <div id="bar-review" class="bg-rose-500 h-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+
+      <!-- 4つのステータスカード（2x2グリッド） -->
+      <div class="grid grid-cols-2 gap-2.5 sm:gap-3 mb-4">
+        <!-- 1. クリア -->
+        <div class="rounded-2xl bg-emerald-50/80 border border-emerald-200/90 p-3.5">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-1.5">
+              <span class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-extrabold shadow-xs">〇</span>
+              <span class="text-xs sm:text-sm font-extrabold text-emerald-800">クリア</span>
+            </div>
+            <span id="stat-clear-pct" class="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-800">
+              0.0%
+            </span>
+          </div>
+          <div class="flex items-baseline gap-1">
+            <span id="stat-clear-count" class="text-2xl font-extrabold text-emerald-700">0</span>
+            <span class="text-xs font-bold text-emerald-600">/ <span id="stat-clear-denom">283</span>問</span>
+          </div>
+        </div>
+
+        <!-- 2. あと一歩 -->
+        <div class="rounded-2xl bg-amber-50/80 border border-amber-200/90 p-3.5">
+          <div class="flex items-center gap-1.5 mb-2">
+            <span class="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-[11px] font-extrabold shadow-xs">▲</span>
+            <span class="text-xs sm:text-sm font-extrabold text-amber-800">あと一歩</span>
+          </div>
+          <div class="flex items-baseline gap-1">
+            <span id="stat-almost-count" class="text-2xl font-extrabold text-amber-700">0</span>
+            <span class="text-xs font-bold text-amber-600">問</span>
+          </div>
+        </div>
+
+        <!-- 3. 要復習 -->
+        <div class="rounded-2xl bg-rose-50/80 border border-rose-200/90 p-3.5">
+          <div class="flex items-center gap-1.5 mb-2">
+            <span class="w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center text-xs font-extrabold shadow-xs">×</span>
+            <span class="text-xs sm:text-sm font-extrabold text-rose-800">要復習</span>
+          </div>
+          <div class="flex items-baseline gap-1">
+            <span id="stat-review-count" class="text-2xl font-extrabold text-rose-700">0</span>
+            <span class="text-xs font-bold text-rose-600">問</span>
+          </div>
+        </div>
+
+        <!-- 4. 未着手 -->
+        <div class="rounded-2xl bg-slate-50 border border-slate-200/90 p-3.5">
+          <div class="flex items-center gap-1.5 mb-2">
+            <span class="w-6 h-6 rounded-full bg-slate-300 text-white flex items-center justify-center text-xs font-extrabold">－</span>
+            <span class="text-xs sm:text-sm font-extrabold text-slate-600">未着手</span>
+          </div>
+          <div class="flex items-baseline gap-1">
+            <span id="stat-unstarted-count" class="text-2xl font-extrabold text-slate-700">283</span>
+            <span class="text-xs font-bold text-slate-500">問</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 周回別レコード（1回目〜5回目） -->
+      <div>
+        <h3 class="text-xs font-bold text-slate-500 mb-2">周回別レコード（クリア数 / 解答済み数）</h3>
+        <div id="round-records-grid" class="grid grid-cols-5 gap-1.5 sm:gap-2">
+          <!-- JSで1〜5回目カードを描画 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- フィルター・検索エリア -->
+    <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-3.5">
+      <!-- ステータス絞り込みタブ -->
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+        <button
+          type="button"
+          data-status="ALL"
+          class="status-tab shrink-0 px-3.5 py-2 rounded-full text-xs font-bold bg-[#1d4ed8] text-white shadow-xs transition"
+        >
+          すべて (<span id="tab-count-all">283</span>)
+        </button>
+        <button
+          type="button"
+          data-status="NEEDS_REVIEW"
+          class="status-tab shrink-0 px-3.5 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200/70 transition"
+        >
+          要復習 (×・▲) (<span id="tab-count-needs">0</span>)
+        </button>
+        <button
+          type="button"
+          data-status="X_ONLY"
+          class="status-tab shrink-0 px-3.5 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200/70 transition"
+        >
+          × のみ (<span id="tab-count-x">0</span>)
+        </button>
+        <button
+          type="button"
+          data-status="UNSTARTED"
+          class="status-tab shrink-0 px-3.5 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200/70 transition"
+        >
+          未着手 (<span id="tab-count-unstarted">283</span>)
+        </button>
+      </div>
+
+      <!-- 科目＆章ショートカットボタン -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-bold text-slate-600">科目・章ショートカット（タップで絞り込み）</label>
+          <button
+            type="button"
+            id="btn-clear-chapter"
+            class="text-[11px] font-bold text-blue-600 hover:underline hidden"
+          >
+            章指定を解除
+          </button>
+        </div>
+        <div id="chapter-shortcuts" class="flex flex-wrap gap-1.5">
+          <!-- JSで7章分のボタンを生成 -->
+        </div>
+      </div>
+
+      <!-- 周回ピンポイント抽出ドロップダウン -->
+      <div>
+        <label for="round-pinpoint-select" class="block text-xs font-bold text-slate-600 mb-1">
+          周回ピンポイント抽出
+        </label>
+        <select
+          id="round-pinpoint-select"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs sm:text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+        >
+          <option value="NONE">指定なし（すべての周回）</option>
+          <optgroup label="1回目の記録で抽出">
+            <option value="1:X_OR_TRI">1回目で × または ▲ の問題</option>
+            <option value="1:X">1回目で × の問題</option>
+            <option value="1:TRI">1回目で ▲ の問題</option>
+            <option value="1:O">1回目で 〇 の問題</option>
+            <option value="1:NONE">1回目が未記録（－）の問題</option>
+          </optgroup>
+          <optgroup label="2回目の記録で抽出">
+            <option value="2:X_OR_TRI">2回目で × または ▲ の問題</option>
+            <option value="2:X">2回目で × の問題</option>
+            <option value="2:TRI">2回目で ▲ の問題</option>
+            <option value="2:O">2回目で 〇 の問題</option>
+            <option value="2:NONE">2回目が未記録（－）の問題</option>
+          </optgroup>
+          <optgroup label="3回目の記録で抽出">
+            <option value="3:X_OR_TRI">3回目で × または ▲ の問題</option>
+            <option value="3:X">3回目で × の問題</option>
+            <option value="3:TRI">3回目で ▲ の問題</option>
+            <option value="3:O">3回目で 〇 の問題</option>
+          </optgroup>
+          <optgroup label="4回目の記録で抽出">
+            <option value="4:X_OR_TRI">4回目で × または ▲ の問題</option>
+            <option value="4:X">4回目で × の問題</option>
+            <option value="4:O">4回目で 〇 の問題</option>
+          </optgroup>
+          <optgroup label="5回目の記録で抽出">
+            <option value="5:X_OR_TRI">5回目で × または ▲ の問題</option>
+            <option value="5:X">5回目で × の問題</option>
+            <option value="5:O">5回目で 〇 の問題</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <!-- 問題番号 / メモ検索 -->
+      <div>
+        <label for="search-input" class="block text-xs font-bold text-slate-600 mb-1">
+          問題番号 / メモ検索
+        </label>
+        <div class="relative">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z" />
+          </svg>
+          <input
+            id="search-input"
+            type="text"
+            placeholder="例: 42 や 場合分け、正弦定理"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-8 py-2.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+          />
+          <button
+            id="btn-clear-search"
+            type="button"
+            class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+            aria-label="検索をクリア"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- 問題番号の範囲指定 -->
+      <div>
+        <label class="block text-xs font-bold text-slate-600 mb-1">
+          問題番号の範囲指定（<span id="range-hint-label">数I: 1〜174 / 数A: 1〜109</span>）
+        </label>
+        <div class="flex items-center gap-2">
+          <input
+            id="range-min"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            max="174"
+            placeholder="1"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+          />
+          <span class="text-slate-400 font-bold">〜</span>
+          <input
+            id="range-max"
+            type="number"
+            inputmode="numeric"
+            min="1"
+            max="174"
+            placeholder="174"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-center text-xs sm:text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+          />
+          <button
+            id="btn-reset-filters"
+            type="button"
+            class="shrink-0 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
+          >
+            解除
+          </button>
+        </div>
+      </div>
+
+      <!-- 表示件数 -->
+      <div class="pt-1 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-500">
+        <span id="active-filter-summary" class="text-blue-600 truncate pr-2"></span>
+        <span class="shrink-0">
+          表示中: <strong id="visible-count" class="text-[#1d4ed8] text-sm font-extrabold">283</strong> / <span id="scope-total-count">283</span> 問
+        </span>
+      </div>
+    </section>
+
+    <!-- 操作説明注釈 -->
+    <p class="text-[11px] sm:text-xs font-semibold text-slate-500 px-1 leading-relaxed">
+      ※ 各回のボタンをタップすると <span class="font-bold text-slate-700">－ → 〇 → ▲ → × → －</span> の順で切り替わります（自動保存）
+    </p>
+
+    <!-- 問題カードリスト -->
+    <section id="problem-list" class="space-y-3" aria-label="例題リスト">
+      <!-- JSで問題カードをレンダリング -->
+    </section>
+
+    <!-- 該当なしメッセージ -->
+    <div id="empty-state" class="hidden bg-white rounded-2xl p-8 text-center border border-slate-200/80 shadow-xs">
+      <p class="text-sm font-bold text-slate-600 mb-1">条件に一致する例題がありません</p>
+      <p class="text-xs text-slate-400 mb-4">フィルター条件や検索キーワードを変更してみてください</p>
+      <button
+        type="button"
+        id="btn-empty-reset"
+        class="px-4 py-2 rounded-xl bg-[#1d4ed8] text-white text-xs font-bold hover:bg-blue-700 transition"
+      >
+        絞り込みをすべて解除
+      </button>
+    </div>
+  </main>
+
+  <!-- 右下フローティング「トップへ戻る」ボタン -->
+  <button
+    id="btn-scroll-top"
+    type="button"
+    aria-label="ページ上部へ戻る"
+    class="fixed bottom-5 right-4 sm:right-6 z-30 w-12 h-12 rounded-full bg-[#1d4ed8] text-white shadow-lg shadow-blue-900/25 flex items-center justify-center hover:bg-blue-700 active:scale-90 transition opacity-0 pointer-events-none"
+  >
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+    </svg>
+  </button>
+
+  <!-- リセット確認カスタムモーダル（alert/confirm代替） -->
+  <div
+    id="reset-modal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="reset-modal-title"
+  >
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-200 animate-fade-in">
+      <div class="w-11 h-11 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <h3 id="reset-modal-title" class="text-base font-extrabold text-slate-800 mb-1.5">
+        学習データをリセットしますか？
+      </h3>
+      <p class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-5">
+        数学I（174問）・数学A（109問）のすべての周回記録とメモが完全に消去されます。この操作は取り消せません。
+      </p>
+      <div class="flex items-center justify-end gap-2">
+        <button
+          id="btn-reset-cancel"
+          type="button"
+          class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs sm:text-sm font-bold hover:bg-slate-200 transition"
+        >
+          キャンセル
+        </button>
+        <button
+          id="btn-reset-confirm"
+          type="button"
+          class="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-xs sm:text-sm font-bold hover:bg-rose-700 transition"
+        >
+          すべてリセット
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- トースト通知 -->
+  <div
+    id="toast"
+    class="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 px-4 py-2.5 rounded-full bg-slate-800/95 text-white text-xs font-bold shadow-lg opacity-0 pointer-events-none transition-opacity duration-200"
+  >
+    通知メッセージ
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ==========================================
+      // 1. マスタデータ定義（青チャート 数学I+A）
+      // ==========================================
+      const STORAGE_KEY = 'aochart_math1a_tracker_v1';
+
+      const CHAPTER_DEFS = [
+        { id: 'I-1', subject: 'I', subjectLabel: '数I', chapterNum: 1, chapterTitle: '第1章 数と式', shortLabel: '数I 第1章 (1~42)', start: 1, end: 42 },
+        { id: 'I-2', subject: 'I', subjectLabel: '数I', chapterNum: 2, chapterTitle: '第2章 集合と命題', shortLabel: '数I 第2章 (43~63)', start: 43, end: 63 },
+        { id: 'I-3', subject: 'I', subjectLabel: '数I', chapterNum: 3, chapterTitle: '第3章 2次関数', shortLabel: '数I 第3章 (64~132)', start: 64, end: 132 },
+        { id: 'I-4', subject: 'I', subjectLabel: '数I', chapterNum: 4, chapterTitle: '第4章 図形と計量', shortLabel: '数I 第4章 (133~174)', start: 133, end: 174 },
+        { id: 'A-1', subject: 'A', subjectLabel: '数A', chapterNum: 1, chapterTitle: '第1章 場合の数', shortLabel: '数A 第1章 (1~34)', start: 1, end: 34 },
+        { id: 'A-2', subject: 'A', subjectLabel: '数A', chapterNum: 2, chapterTitle: '第2章 確率', shortLabel: '数A 第2章 (35~69)', start: 35, end: 69 },
+        { id: 'A-3', subject: 'A', subjectLabel: '数A', chapterNum: 3, chapterTitle: '第3章 図形の性質', shortLabel: '数A 第3章 (70~109)', start: 70, end: 109 },
+      ];
+
+      // 全283問の問題リストを生成
+      const PROBLEMS = [];
+      CHAPTER_DEFS.forEach((ch) => {
+        for (let num = ch.start; num <= ch.end; num++) {
+          PROBLEMS.push({
+            uid: `${ch.subject}-${num}`, // 一意キー（例: "I-1", "A-1"）
+            subject: ch.subject,
+            subjectLabel: ch.subjectLabel,
+            chapterId: ch.id,
+            chapterTitle: ch.chapterTitle,
+            number: num,
+          });
+        }
+      });
+
+      // 評価状態のサイクル順序: '-' -> 'O' -> 'TRI' -> 'X' -> '-'
+      const STATUS_CYCLE = ['-', 'O', 'TRI', 'X'];
+
+      const STATUS_META = {
+        '-': {
+          symbol: '－',
+          pillText: '最新: －（未記録）',
+          badgeBg: 'bg-slate-200 text-slate-500',
+          pillBg: 'bg-slate-100 text-slate-500',
+          borderLeft: 'border-l-slate-300',
+          btnClass: 'bg-slate-100 text-slate-500 border-slate-200/80 hover:bg-slate-200/70',
+        },
+        'O': {
+          symbol: '〇',
+          pillText: '最新: 〇（完璧）',
+          badgeBg: 'bg-emerald-500 text-white',
+          pillBg: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+          borderLeft: 'border-l-emerald-500',
+          btnClass: 'bg-emerald-500 text-white border-emerald-600 shadow-xs',
+        },
+        'TRI': {
+          symbol: '▲',
+          pillText: '最新: ▲（あと一歩）',
+          badgeBg: 'bg-amber-500 text-white',
+          pillBg: 'bg-amber-50 text-amber-700 border border-amber-200',
+          borderLeft: 'border-l-amber-400',
+          btnClass: 'bg-amber-500 text-white border-amber-600 shadow-xs',
+        },
+        'X': {
+          symbol: '×',
+          pillText: '最新: ×（要復習）',
+          badgeBg: 'bg-rose-500 text-white',
+          pillBg: 'bg-rose-50 text-rose-700 border border-rose-200',
+          borderLeft: 'border-l-rose-500',
+          btnClass: 'bg-rose-500 text-white border-rose-600 shadow-xs',
+        },
+      };
+
+      // ==========================================
+      // 2. アプリケーション状態管理 & 永続化
+      // ==========================================
+      let records = loadRecords();
+
+      const filterState = {
+        subject: 'ALL',      // 'ALL' | 'I' | 'A'
+        status: 'ALL',       // 'ALL' | 'NEEDS_REVIEW' | 'X_ONLY' | 'UNSTARTED'
+        chapterId: null,     // 'I-1' ... 'A-3' or null
+        roundPinpoint: 'NONE', // 'NONE' or '1:X_OR_TRI' etc.
+        searchQuery: '',
+        rangeMin: '',
+        rangeMax: '',
+      };
+
+      function loadRecords() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return {};
+          const parsed = JSON.parse(raw);
+          return typeof parsed === 'object' && parsed !== null ? parsed : {};
+        } catch (e) {
+          console.error('Failed to load records:', e);
+          return {};
+        }
+      }
+
+      function saveRecords() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        } catch (e) {
+          console.error('Failed to save records:', e);
+        }
+      }
+
+      function getProblemRecord(uid) {
+        if (!records[uid]) {
+          records[uid] = {
+            rounds: ['-', '-', '-', '-', '-'],
+            memo: '',
+          };
+        }
+        return records[uid];
+      }
+
+      // 1〜5回のうち最も右（最新）にある記録済み評価を返す
+      function getLatestStatus(rounds) {
+        for (let i = rounds.length - 1; i >= 0; i--) {
+          if (rounds[i] !== '-') {
+            return rounds[i];
+          }
+        }
+        return '-';
+      }
+
+      // ==========================================
+      // 3. DOM要素の参照
+      // ==========================================
+      const elSubjectTabs = document.querySelectorAll('.subject-tab');
+      const elStatusTabs = document.querySelectorAll('.status-tab');
+      const elChapterShortcuts = document.getElementById('chapter-shortcuts');
+      const elBtnClearChapter = document.getElementById('btn-clear-chapter');
+      const elRoundPinpoint = document.getElementById('round-pinpoint-select');
+      const elSearchInput = document.getElementById('search-input');
+      const elBtnClearSearch = document.getElementById('btn-clear-search');
+      const elRangeMin = document.getElementById('range-min');
+      const elRangeMax = document.getElementById('range-max');
+      const elRangeHintLabel = document.getElementById('range-hint-label');
+      const elBtnResetFilters = document.getElementById('btn-reset-filters');
+      const elBtnEmptyReset = document.getElementById('btn-empty-reset');
+      const elProblemList = document.getElementById('problem-list');
+      const elEmptyState = document.getElementById('empty-state');
+      const elScrollTopBtn = document.getElementById('btn-scroll-top');
+
+      // ==========================================
+      // 4. 初期UI構築（章ショートカットボタン生成）
+      // ==========================================
+      function renderChapterShortcuts() {
+        elChapterShortcuts.innerHTML = CHAPTER_DEFS.map((ch) => {
+          const isSelected = filterState.chapterId === ch.id;
+          const isMathI = ch.subject === 'I';
+          let btnStyle = '';
+          if (isSelected) {
+            btnStyle = isMathI
+              ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+              : 'bg-indigo-600 text-white border-indigo-600 shadow-xs';
+          } else {
+            btnStyle = isMathI
+              ? 'bg-blue-50/70 text-blue-800 border-blue-200/80 hover:bg-blue-100/80'
+              : 'bg-indigo-50/70 text-indigo-800 border-indigo-200/80 hover:bg-indigo-100/80';
+          }
+          return `
+            <button
+              type="button"
+              data-chapter-id="${ch.id}"
+              class="chapter-btn px-2.5 py-1.5 rounded-xl border text-[11px] sm:text-xs font-bold transition ${btnStyle}"
+            >
+              ${ch.shortLabel}
+            </button>
+          `;
+        }).join('');
+
+        if (filterState.chapterId) {
+          elBtnClearChapter.classList.remove('hidden');
+        } else {
+          elBtnClearChapter.classList.add('hidden');
+        }
+      }
+
+      // ==========================================
+      // 5. サマリー＆周回別レコード集計・描画
+      // ==========================================
+      function updateSummaryAndCounts() {
+        // 現在の科目タブの対象問題
+        const subjectProblems = PROBLEMS.filter((p) =>
+          filterState.subject === 'ALL' ? true : p.subject === filterState.subject
+        );
+
+        const total = subjectProblems.length;
+        let clearCount = 0;
+        let almostCount = 0;
+        let reviewCount = 0;
+        let unstartedCount = 0;
+
+        // 1〜5回目ごとの集計
+        const roundStats = [
+          { clear: 0, answered: 0 },
+          { clear: 0, answered: 0 },
+          { clear: 0, answered: 0 },
+          { clear: 0, answered: 0 },
+          { clear: 0, answered: 0 },
+        ];
+
+        subjectProblems.forEach((p) => {
+          const rec = records[p.uid];
+          const rounds = rec ? rec.rounds : ['-', '-', '-', '-', '-'];
+          const latest = getLatestStatus(rounds);
+
+          if (latest === 'O') clearCount++;
+          else if (latest === 'TRI') almostCount++;
+          else if (latest === 'X') reviewCount++;
+          else unstartedCount++;
+
+          for (let r = 0; r < 5; r++) {
+            if (rounds[r] !== '-') {
+              roundStats[r].answered++;
+              if (rounds[r] === 'O') {
+                roundStats[r].clear++;
+              }
+            }
+          }
+        });
+
+        // 割合計算
+        const clearPct = total > 0 ? ((clearCount / total) * 100).toFixed(1) : '0.0';
+        const almostPct = total > 0 ? ((almostCount / total) * 100).toFixed(1) : '0.0';
+        const reviewPct = total > 0 ? ((reviewCount / total) * 100).toFixed(1) : '0.0';
+
+        // サマリーDOM更新
+        const scopeLabelMap = { ALL: '全体 (数I+A)', I: '数学I', A: '数学A' };
+        document.getElementById('summary-scope-badge').textContent = scopeLabelMap[filterState.subject];
+        document.getElementById('summary-total').textContent = total;
+        document.getElementById('summary-clear-rate-top').textContent = `${clearPct}%`;
+
+        document.getElementById('bar-clear').style.width = `${clearPct}%`;
+        document.getElementById('bar-almost').style.width = `${almostPct}%`;
+        document.getElementById('bar-review').style.width = `${reviewPct}%`;
+
+        document.getElementById('stat-clear-pct').textContent = `${clearPct}%`;
+        document.getElementById('stat-clear-count').textContent = clearCount;
+        document.getElementById('stat-clear-denom').textContent = total;
+        document.getElementById('stat-almost-count').textContent = almostCount;
+        document.getElementById('stat-review-count').textContent = reviewCount;
+        document.getElementById('stat-unstarted-count').textContent = unstartedCount;
+
+        // ステータスタブ内の件数更新
+        document.getElementById('tab-count-all').textContent = total;
+        document.getElementById('tab-count-needs').textContent = reviewCount + almostCount;
+        document.getElementById('tab-count-x').textContent = reviewCount;
+        document.getElementById('tab-count-unstarted').textContent = unstartedCount;
+
+        // 周回別レコード（5列ミニカード）描画
+        const roundGrid = document.getElementById('round-records-grid');
+        roundGrid.innerHTML = roundStats
+          .map((st, idx) => {
+            const pctText = st.answered > 0 ? `${Math.round((st.clear / st.answered) * 100)}%` : '-';
+            const pctColor = st.answered > 0 ? 'text-emerald-600' : 'text-slate-400';
+            return `
+              <div class="rounded-xl bg-slate-50 border border-slate-200/80 py-2.5 px-1 text-center">
+                <div class="text-[11px] font-bold text-slate-500 mb-1">${idx + 1}回目</div>
+                <div class="text-xs sm:text-sm font-extrabold text-slate-800">
+                  <span class="text-[#1d4ed8]">${st.clear}</span><span class="text-slate-400 font-semibold">/${st.answered}</span>
+                </div>
+                <div class="text-[11px] font-extrabold ${pctColor} mt-0.5">${pctText}</div>
+              </div>
+            `;
+          })
+          .join('');
+      }
+
+      // ==========================================
+      // 6. フィルタリング＆問題カードリスト描画
+      // ==========================================
+      function getFilteredProblems() {
+        const query = filterState.searchQuery.trim().toLowerCase();
+        const minNum = filterState.rangeMin !== '' ? parseInt(filterState.rangeMin, 10) : null;
+        const maxNum = filterState.rangeMax !== '' ? parseInt(filterState.rangeMax, 10) : null;
+
+        return PROBLEMS.filter((p) => {
+          // 1. 科目フィルター
+          if (filterState.subject !== 'ALL' && p.subject !== filterState.subject) {
+            return false;
+          }
+
+          // 2. 章ショートカットフィルター
+          if (filterState.chapterId && p.chapterId !== filterState.chapterId) {
+            return false;
+          }
+
+          const rec = records[p.uid];
+          const rounds = rec ? rec.rounds : ['-', '-', '-', '-', '-'];
+          const memo = rec ? rec.memo : '';
+          const latest = getLatestStatus(rounds);
+
+          // 3. ステータスフィルター
+          if (filterState.status === 'NEEDS_REVIEW' && latest !== 'X' && latest !== 'TRI') {
+            return false;
+          }
+          if (filterState.status === 'X_ONLY' && latest !== 'X') {
+            return false;
+          }
+          if (filterState.status === 'UNSTARTED' && latest !== '-') {
+            return false;
+          }
+
+          // 4. 周回ピンポイント抽出
+          if (filterState.roundPinpoint !== 'NONE') {
+            const [roundStr, cond] = filterState.roundPinpoint.split(':');
+            const rIdx = parseInt(roundStr, 10) - 1;
+            const val = rounds[rIdx];
+            if (cond === 'X_OR_TRI' && val !== 'X' && val !== 'TRI') return false;
+            if (cond === 'X' && val !== 'X') return false;
+            if (cond === 'TRI' && val !== 'TRI') return false;
+            if (cond === 'O' && val !== 'O') return false;
+            if (cond === 'NONE' && val !== '-') return false;
+          }
+
+          // 5. 問題番号の範囲指定
+          if (minNum !== null && !Number.isNaN(minNum) && p.number < minNum) {
+            return false;
+          }
+          if (maxNum !== null && !Number.isNaN(maxNum) && p.number > maxNum) {
+            return false;
+          }
+
+          // 6. 検索キーワード（問題番号・章名・科目名・メモ）
+          if (query) {
+            const targetText = `${p.subjectLabel} ${p.chapterTitle} 例題${p.number} ${p.number} ${memo}`.toLowerCase();
+            if (!targetText.includes(query)) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+      }
+
+      function renderProblemList() {
+        const subjectTotal = PROBLEMS.filter((p) =>
+          filterState.subject === 'ALL' ? true : p.subject === filterState.subject
+        ).length;
+
+        const filtered = getFilteredProblems();
+
+        document.getElementById('visible-count').textContent = filtered.length;
+        document.getElementById('scope-total-count').textContent = subjectTotal;
+
+        // 適用中の章ラベル表示
+        const activeFilterEl = document.getElementById('active-filter-summary');
+        if (filterState.chapterId) {
+          const ch = CHAPTER_DEFS.find((c) => c.id === filterState.chapterId);
+          activeFilterEl.textContent = ch ? `絞込中: ${ch.subjectLabel} ${ch.chapterTitle}` : '';
+        } else {
+          activeFilterEl.textContent = '';
+        }
+
+        if (filtered.length === 0) {
+          elProblemList.innerHTML = '';
+          elEmptyState.classList.remove('hidden');
+          return;
+        }
+
+        elEmptyState.classList.add('hidden');
+
+        elProblemList.innerHTML = filtered
+          .map((p) => {
+            const rec = records[p.uid];
+            const rounds = rec ? rec.rounds : ['-', '-', '-', '-', '-'];
+            const memo = rec ? rec.memo : '';
+            const latest = getLatestStatus(rounds);
+            const meta = STATUS_META[latest];
+
+            const subjectBadgeStyle =
+              p.subject === 'I'
+                ? 'bg-blue-100 text-blue-800'
+                : 'bg-indigo-100 text-indigo-800';
+
+            const roundButtonsHtml = rounds
+              .map((rVal, idx) => {
+                const rMeta = STATUS_META[rVal];
+                return `
+                  <button
+                    type="button"
+                    data-uid="${p.uid}"
+                    data-round="${idx}"
+                    class="round-toggle-btn flex flex-col items-center justify-center py-2 px-1 rounded-xl border font-bold transition active:scale-95 select-none ${rMeta.btnClass}"
+                  >
+                    <span class="text-[10px] opacity-80 leading-none mb-1">${idx + 1}回</span>
+                    <span class="text-sm sm:text-base font-extrabold leading-none">${rMeta.symbol}</span>
+                  </button>
+                `;
+              })
+              .join('');
+
+            return `
+              <article
+                id="card-${p.uid}"
+                class="bg-white rounded-2xl p-3.5 sm:p-4 shadow-xs border border-slate-200/90 border-l-4 ${meta.borderLeft} transition-colors"
+              >
+                <!-- 上段：ステータス丸バッジ・科目＆章・例題番号・最新ピルバッジ -->
+                <div class="flex items-start justify-between gap-2 mb-3">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div
+                      data-role="latest-circle"
+                      class="shrink-0 w-9 h-9 rounded-full ${meta.badgeBg} flex items-center justify-center text-sm font-extrabold shadow-xs"
+                    >
+                      ${meta.symbol}
+                    </div>
+                    <div class="min-w-0">
+                      <div class="flex flex-wrap items-center gap-1.5 mb-0.5">
+                        <span class="px-1.5 py-0.5 rounded-md text-[10px] font-extrabold ${subjectBadgeStyle}">
+                          ${p.subjectLabel}
+                        </span>
+                        <span class="text-[11px] font-bold text-slate-500 truncate">
+                          ${p.chapterTitle}
+                        </span>
+                      </div>
+                      <div class="text-base sm:text-lg font-extrabold text-slate-800 leading-tight">
+                        ${p.subjectLabel} 例題 ${p.number}
+                      </div>
+                    </div>
+                  </div>
+
+                  <span
+                    data-role="latest-pill"
+                    class="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold ${meta.pillBg}"
+                  >
+                    ${meta.pillText}
+                  </span>
+                </div>
+
+                <!-- 中段：1回〜5回の5つのタップボタン -->
+                <div class="grid grid-cols-5 gap-1.5 sm:gap-2 mb-2.5">
+                  ${roundButtonsHtml}
+                </div>
+
+                <!-- 下段：メモ入力欄 -->
+                <div>
+                  <input
+                    type="text"
+                    data-uid="${p.uid}"
+                    value="${escapeHtml(memo)}"
+                    placeholder="メモ（例：計算ミス注意、場合分け忘れずに）"
+                    class="memo-input w-full rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-2 text-xs sm:text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+                  />
+                </div>
+              </article>
+            `;
+          })
+          .join('');
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      // 単一カードの見た目だけを高速更新（スクロール位置やフォーカスを維持するため）
+      function updateSingleCardUI(uid) {
+        const card = document.getElementById(`card-${uid}`);
+        if (!card) return;
+
+        const rec = getProblemRecord(uid);
+        const latest = getLatestStatus(rec.rounds);
+        const meta = STATUS_META[latest];
+
+        // 左枠線更新
+        card.classList.remove('border-l-slate-300', 'border-l-emerald-500', 'border-l-amber-400', 'border-l-rose-500');
+        card.classList.add(meta.borderLeft);
+
+        // 左上丸バッジ更新
+        const circleEl = card.querySelector('[data-role="latest-circle"]');
+        if (circleEl) {
+          circleEl.className = `shrink-0 w-9 h-9 rounded-full ${meta.badgeBg} flex items-center justify-center text-sm font-extrabold shadow-xs`;
+          circleEl.textContent = meta.symbol;
+        }
+
+        // 右上ピルバッジ更新
+        const pillEl = card.querySelector('[data-role="latest-pill"]');
+        if (pillEl) {
+          pillEl.className = `shrink-0 px-2.5 py-1 rounded-full text-[11px] font-extrabold ${meta.pillBg}`;
+          pillEl.textContent = meta.pillText;
+        }
+
+        // 5つの周回ボタン更新
+        const roundBtns = card.querySelectorAll('.round-toggle-btn');
+        roundBtns.forEach((btn) => {
+          const rIdx = parseInt(btn.getAttribute('data-round'), 10);
+          const rVal = rec.rounds[rIdx];
+          const rMeta = STATUS_META[rVal];
+          btn.className = `round-toggle-btn flex flex-col items-center justify-center py-2 px-1 rounded-xl border font-bold transition active:scale-95 select-none ${rMeta.btnClass}`;
+          const spans = btn.querySelectorAll('span');
+          if (spans[1]) spans[1].textContent = rMeta.symbol;
+        });
+      }
+
+      function refreshAll() {
+        updateSummaryAndCounts();
+        renderProblemList();
+      }
+
+      // ==========================================
+      // 7. イベントリスナー設定
+      // ==========================================
+
+      // 科目タブ切り替え
+      elSubjectTabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const selected = tab.getAttribute('data-subject');
+          filterState.subject = selected;
+
+          // 選択中の章が別科目なら解除
+          if (filterState.chapterId) {
+            const ch = CHAPTER_DEFS.find((c) => c.id === filterState.chapterId);
+            if (ch && selected !== 'ALL' && ch.subject !== selected) {
+              filterState.chapterId = null;
+              filterState.rangeMin = '';
+              filterState.rangeMax = '';
+              elRangeMin.value = '';
+              elRangeMax.value = '';
+            }
+          }
+
+          // タブ見た目更新
+          elSubjectTabs.forEach((t) => {
+            const active = t.getAttribute('data-subject') === selected;
+            t.className = active
+              ? 'subject-tab py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition text-center bg-[#1d4ed8] text-white shadow-sm'
+              : 'subject-tab py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition text-center text-slate-600 hover:bg-slate-100';
+          });
+
+          // 範囲ヒント更新
+          if (selected === 'I') {
+            elRangeHintLabel.textContent = '数学I: 1〜174';
+            elRangeMax.placeholder = '174';
+          } else if (selected === 'A') {
+            elRangeHintLabel.textContent = '数学A: 1〜109';
+            elRangeMax.placeholder = '109';
+          } else {
+            elRangeHintLabel.textContent = '数I: 1〜174 / 数A: 1〜109';
+            elRangeMax.placeholder = '174';
+          }
+
+          renderChapterShortcuts();
+          refreshAll();
+        });
+      });
+
+      // ステータス絞り込みタブ
+      elStatusTabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const selected = tab.getAttribute('data-status');
+          filterState.status = selected;
+
+          elStatusTabs.forEach((t) => {
+            const active = t.getAttribute('data-status') === selected;
+            t.className = active
+              ? 'status-tab shrink-0 px-3.5 py-2 rounded-full text-xs font-bold bg-[#1d4ed8] text-white shadow-xs transition'
+              : 'status-tab shrink-0 px-3.5 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200/70 transition';
+          });
+
+          renderProblemList();
+        });
+      });
+
+      // 章ショートカットボタン（イベント委譲）
+      elChapterShortcuts.addEventListener('click', (e) => {
+        const btn = e.target.closest('.chapter-btn');
+        if (!btn) return;
+
+        const chId = btn.getAttribute('data-chapter-id');
+        if (filterState.chapterId === chId) {
+          // 同じボタンを再タップで解除
+          filterState.chapterId = null;
+          filterState.rangeMin = '';
+          filterState.rangeMax = '';
+          elRangeMin.value = '';
+          elRangeMax.value = '';
+        } else {
+          const ch = CHAPTER_DEFS.find((c) => c.id === chId);
+          if (!ch) return;
+          filterState.chapterId = ch.id;
+          // 科目タブも該当科目へ自動切り替え
+          filterState.subject = ch.subject;
+          elSubjectTabs.forEach((t) => {
+            const active = t.getAttribute('data-subject') === ch.subject;
+            t.className = active
+              ? 'subject-tab py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition text-center bg-[#1d4ed8] text-white shadow-sm'
+              : 'subject-tab py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition text-center text-slate-600 hover:bg-slate-100';
+          });
+          // 範囲入力欄にも反映して分かりやすくする
+          filterState.rangeMin = String(ch.start);
+          filterState.rangeMax = String(ch.end);
+          elRangeMin.value = String(ch.start);
+          elRangeMax.value = String(ch.end);
+          elRangeHintLabel.textContent = ch.subject === 'I' ? '数学I: 1〜174' : '数学A: 1〜109';
+        }
+
+        renderChapterShortcuts();
+        refreshAll();
+      });
+
+      // 章指定解除ボタン
+      elBtnClearChapter.addEventListener('click', () => {
+        filterState.chapterId = null;
+        filterState.rangeMin = '';
+        filterState.rangeMax = '';
+        elRangeMin.value = '';
+        elRangeMax.value = '';
+        renderChapterShortcuts();
+        renderProblemList();
+      });
+
+      // 周回ピンポイント抽出
+      elRoundPinpoint.addEventListener('change', (e) => {
+        filterState.roundPinpoint = e.target.value;
+        renderProblemList();
+      });
+
+      // 検索ボックス
+      elSearchInput.addEventListener('input', (e) => {
+        filterState.searchQuery = e.target.value;
+        if (filterState.searchQuery.length > 0) {
+          elBtnClearSearch.classList.remove('hidden');
+        } else {
+          elBtnClearSearch.classList.add('hidden');
+        }
+        renderProblemList();
+      });
+
+      elBtnClearSearch.addEventListener('click', () => {
+        filterState.searchQuery = '';
+        elSearchInput.value = '';
+        elBtnClearSearch.classList.add('hidden');
+        renderProblemList();
+      });
+
+      // 範囲指定入力
+      elRangeMin.addEventListener('input', (e) => {
+        filterState.chapterId = null;
+        renderChapterShortcuts();
+        filterState.rangeMin = e.target.value;
+        renderProblemList();
+      });
+
+      elRangeMax.addEventListener('input', (e) => {
+        filterState.chapterId = null;
+        renderChapterShortcuts();
+        filterState.rangeMax = e.target.value;
+        renderProblemList();
+      });
+
+      // 絞り込み解除ボタン
+      function clearAllFilters() {
+        filterState.status = 'ALL';
+        filterState.chapterId = null;
+        filterState.roundPinpoint = 'NONE';
+        filterState.searchQuery = '';
+        filterState.rangeMin = '';
+        filterState.rangeMax = '';
+
+        elRoundPinpoint.value = 'NONE';
+        elSearchInput.value = '';
+        elBtnClearSearch.classList.add('hidden');
+        elRangeMin.value = '';
+        elRangeMax.value = '';
+
+        elStatusTabs.forEach((t) => {
+          const active = t.getAttribute('data-status') === 'ALL';
+          t.className = active
+            ? 'status-tab shrink-0 px-3.5 py-2 rounded-full text-xs font-bold bg-[#1d4ed8] text-white shadow-xs transition'
+            : 'status-tab shrink-0 px-3.5 py-2 rounded-full text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200/70 transition';
+        });
+
+        renderChapterShortcuts();
+        renderProblemList();
+      }
+
+      elBtnResetFilters.addEventListener('click', clearAllFilters);
+      elBtnEmptyReset.addEventListener('click', clearAllFilters);
+
+      // 問題カード内の周回ボタンタップ（イベント委譲）
+      elProblemList.addEventListener('click', (e) => {
+        const btn = e.target.closest('.round-toggle-btn');
+        if (!btn) return;
+
+        const uid = btn.getAttribute('data-uid');
+        const roundIdx = parseInt(btn.getAttribute('data-round'), 10);
+        const rec = getProblemRecord(uid);
+
+        const currentVal = rec.rounds[roundIdx];
+        const nextIdx = (STATUS_CYCLE.indexOf(currentVal) + 1) % STATUS_CYCLE.length;
+        rec.rounds[roundIdx] = STATUS_CYCLE[nextIdx];
+
+        saveRecords();
+        updateSingleCardUI(uid);
+        updateSummaryAndCounts();
+      });
+
+      // メモ入力の自動保存（イベント委譲）
+      elProblemList.addEventListener('input', (e) => {
+        const input = e.target.closest('.memo-input');
+        if (!input) return;
+
+        const uid = input.getAttribute('data-uid');
+        const rec = getProblemRecord(uid);
+        rec.memo = input.value;
+        saveRecords();
+      });
+
+      // ==========================================
+      // 8. CSV出力機能（UTF-8 BOM付き）
+      // ==========================================
+      document.getElementById('btn-export-csv').addEventListener('click', () => {
+        const symbolMap = { '-': '－', 'O': '〇', 'TRI': '▲', 'X': '×' };
+        const headers = ['科目', '章', '例題番号', '最新評価', '1回目', '2回目', '3回目', '4回目', '5回目', 'メモ'];
+
+        const rows = PROBLEMS.map((p) => {
+          const rec = records[p.uid];
+          const rounds = rec ? rec.rounds : ['-', '-', '-', '-', '-'];
+          const memo = rec ? rec.memo : '';
+          const latest = getLatestStatus(rounds);
+
+          return [
+            p.subjectLabel,
+            p.chapterTitle,
+            p.number,
+            symbolMap[latest],
+            symbolMap[rounds[0]],
+            symbolMap[rounds[1]],
+            symbolMap[rounds[2]],
+            symbolMap[rounds[3]],
+            symbolMap[rounds[4]],
+            `"${String(memo).replace(/"/g, '""')}"`,
+          ].join(',');
+        });
+
+        const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+
+        const now = new Date();
+        const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `aochart_math1a_${ymd}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        showToast('CSVファイルを出力しました');
+      });
+
+      // ==========================================
+      // 9. リセットモーダル制御
+      // ==========================================
+      const elResetModal = document.getElementById('reset-modal');
+
+      document.getElementById('btn-reset-open').addEventListener('click', () => {
+        elResetModal.classList.remove('hidden');
+        elResetModal.classList.add('flex');
+      });
+
+      document.getElementById('btn-reset-cancel').addEventListener('click', () => {
+        elResetModal.classList.add('hidden');
+        elResetModal.classList.remove('flex');
+      });
+
+      elResetModal.addEventListener('click', (e) => {
+        if (e.target === elResetModal) {
+          elResetModal.classList.add('hidden');
+          elResetModal.classList.remove('flex');
+        }
+      });
+
+      document.getElementById('btn-reset-confirm').addEventListener('click', () => {
+        records = {};
+        saveRecords();
+        elResetModal.classList.add('hidden');
+        elResetModal.classList.remove('flex');
+        refreshAll();
+        showToast('すべての学習データをリセットしました');
+      });
+
+      // ==========================================
+      // 10. トップへ戻るボタン＆トースト通知
+      // ==========================================
+      window.addEventListener(
+        'scroll',
+        () => {
+          if (window.scrollY > 320) {
+            elScrollTopBtn.classList.remove('opacity-0', 'pointer-events-none');
+          } else {
+            elScrollTopBtn.classList.add('opacity-0', 'pointer-events-none');
+          }
+        },
+        { passive: true }
+      );
+
+      elScrollTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      let toastTimer = null;
+      function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.remove('opacity-0');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toast.classList.add('opacity-0');
+        }, 2400);
+      }
+
+      // ==========================================
+      // 11. 初回レンダリング実行
+      // ==========================================
+      renderChapterShortcuts();
+      refreshAll();
+    })();
+  </script>
+</body>
+</html>
+
+```
